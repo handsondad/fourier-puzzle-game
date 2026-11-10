@@ -2,6 +2,8 @@
 
 给孩子玩的傅里叶小游戏：小念和爸爸带着用一个个正弦波、一个个转圈的圆盘，拼出方波、三角星、爱心和雪花。界面、小念和爸爸的形象与声音都照着 family-tree-player（认亲戚大冒险）。
 
+在线访问：<https://handsondad.github.io/fourier-puzzle-game/>
+
 讲法跟着漫士沉思录的科普视频走（[去看视频](https://www.youtube.com/watch?v=gbe_NHwkRCI)）：几号圆盘一圈时间里转几圈、圆上套圆画曲线、"跟着转、找重心"读出每个圆盘。
 
 - **看一看**
@@ -27,6 +29,8 @@ npm run voice      # 改了台词后重新配音
 ```
 
 `npm run voice` 需要联网，还要先装好 `python -m pip install edge-tts`，PATH 里要有 ffmpeg / ffprobe。它只生成新的或改过的句子，可以随时中断再续。
+
+推送到 `main` 后，`.github/workflows/deploy.yml` 会跑测试、构建，并发布到 GitHub Pages。仓库 Settings → Pages 的 Source 要选 **GitHub Actions**。
 
 ## 说明
 
