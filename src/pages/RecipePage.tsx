@@ -17,12 +17,13 @@ export function RecipePage({ settings, onBack, onFinish }: Props) {
   const [questions, setQuestions] = useState(() => recipeRound());
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
+  const [results, setResults] = useState<boolean[]>([]);
   const later = useRef(0);
   const tone = useTone();
   const question = questions[index];
   const prompt = recipeLines[question.kind];
   const explain = recipeLines.explain[question.answer.length - 1];
+  const score = results.filter(Boolean).length;
   const stars = starsFor(score, RECIPE_COUNT);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function RecipePage({ settings, onBack, onFinish }: Props) {
     setQuestions(recipeRound());
     setIndex(0);
     setPicked(null);
-    setScore(0);
+    setResults([]);
     setPhase("play");
   }
 
@@ -42,7 +43,7 @@ export function RecipePage({ settings, onBack, onFinish }: Props) {
     if (picked !== null) return;
     setPicked(i);
     const right = question.options[i] === question.answer;
-    if (right) setScore(score + 1);
+    setResults([...results, right]);
     if (!settings.sound) return;
     chime(right);
     later.current = window.setTimeout(() => say(...(right ? [nian(rightLine), dad(explain)] : [dad(explain)])), 350);
@@ -78,7 +79,11 @@ export function RecipePage({ settings, onBack, onFinish }: Props) {
     <div className="page game-page">
       {top}
       <div className="quiz-progress" aria-label={`第 ${index + 1} 题，共 ${RECIPE_COUNT} 题`}>
-        {questions.map((q, i) => <span key={q.key} className={i < index ? "is-done" : i === index ? "is-now" : ""} />)}
+        {questions.map((q, i) => {
+          const cls = i < results.length ? (results[i] ? "is-right" : "is-wrong") : i === index ? "is-now" : "";
+          return <span key={q.key} className={cls} />;
+        })}
+        <small className="quiz-step">第 {index + 1} / {RECIPE_COUNT} 题</small>
       </div>
 
       <section className="card quiz-card recipe-card" aria-labelledby="recipe-prompt">
@@ -96,7 +101,7 @@ export function RecipePage({ settings, onBack, onFinish }: Props) {
           {question.options.map((option, i) => {
             const state = picked === null ? "" : option === question.answer ? " is-right" : i === picked ? " is-wrong" : " is-dim";
             return (
-              <button key={i} type="button" className={`option recipe-option${state}`} onClick={() => choose(i)} disabled={picked !== null && state === " is-dim"}
+              <button key={i} type="button" className={`option recipe-option${state}`} onClick={() => choose(i)} disabled={picked !== null}
                 aria-label={showWave ? `配方：${recipeText(option)}` : `第 ${i + 1} 条波`}>
                 {showWave
                   ? <RecipeBars recipe={option} label={recipeText(option)} mini />

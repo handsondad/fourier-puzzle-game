@@ -6,7 +6,7 @@ import { introTalks } from "../data/lines";
 import { pairLines } from "../data/voice-lines";
 import { sampleWaves, shapeAmp, shapeAt, shapeNames, shapeRecipe, type Shape, type Wave } from "../lib/fourier";
 import { say } from "../lib/speech";
-import { playTone, useTone } from "../lib/tone";
+import { hasSound, playTone, useTone } from "../lib/tone";
 import { AMP, PHASE_STEP } from "../lib/waveGame";
 
 const COUNT = 6;
@@ -69,7 +69,7 @@ export function LabPage({ settings, onBack }: Props) {
           </button>
         ))}
         <button type="button" className="pill-btn" onClick={() => { setWaves(empty()); setGhost(null); }}>↺ 只留 1 号波</button>
-        <button type="button" className="pill-btn" aria-pressed={tone === "lab"} onClick={() => playTone("lab", waves)}>🎵 听一听</button>
+        <button type="button" className="pill-btn" aria-pressed={tone === "lab"} disabled={!hasSound(waves)} onClick={() => playTone("lab", waves)}>🎵 听一听</button>
       </div>
 
       <section className="card plot-card" aria-label="工作台波形">
@@ -78,7 +78,7 @@ export function LabPage({ settings, onBack }: Props) {
         <p className="legend" aria-hidden="true">
           {ghost && <span className="is-target">真正的{shapeNames[ghost]}</span>}
           <span className="is-sum">加起来</span>
-          <span>细线是每个波</span>
+          <span className="is-part">细线是每个波</span>
         </p>
       </section>
 

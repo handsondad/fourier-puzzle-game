@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Burst } from "../components/GameKit";
 import { Chat, DadSays, TopBar, type Settings } from "../components/Shared";
 import { fixed, Slider } from "../components/Slider";
@@ -59,6 +59,10 @@ export function SkyPage({ settings, onBack, onGo }: Props) {
       <div className="sky-layout">
         <section className="card sky-card" aria-label={`从地球上看${planet.name}`}>
           <SkyStage label={`地球在中间，${planet.name}一边往前走，一边打小圈`} planet={planet} playing={playing} band />
+          <p className="legend" aria-hidden="true">
+            <span className="is-forward" style={{ "--c": planet.color } as CSSProperties}>往前走</span>
+            <span className="is-retro">粉色：倒着走</span>
+          </p>
         </section>
         <div className="sky-side">
           <DadSays>{skyLines.watch}</DadSays>

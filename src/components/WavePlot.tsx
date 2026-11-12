@@ -36,11 +36,12 @@ type Props = {
   missing?: readonly number[];
   sum?: readonly number[];
   yMax?: number;
+  periods?: number;
   mini?: boolean;
 };
 
 /** 一张波形图：灰色粗线是目标，橙色是加起来的总和，细彩线是每个波，虚线是还差的部分。 */
-export function WavePlot({ label, target, noise, parts = [], missing, sum, yMax = 2, mini = false }: Props) {
+export function WavePlot({ label, target, noise, parts = [], missing, sum, yMax = 2, periods = PLOT_PERIODS, mini = false }: Props) {
   const height = mini ? 140 : H;
   const unit = (height / 2 - 10) / yMax;
   return (
@@ -48,8 +49,8 @@ export function WavePlot({ label, target, noise, parts = [], missing, sum, yMax 
       <g className="plot-grid">
         {!mini && [-1, 1].map((v) => <line key={v} x1="0" x2={W} y1={height / 2 - v * unit} y2={height / 2 - v * unit} className="plot-unit" />)}
         <line x1="0" x2={W} y1={height / 2} y2={height / 2} className="plot-axis" />
-        {Array.from({ length: PLOT_PERIODS + 1 }, (_, i) => {
-          const x = Math.min(W - 1.5, Math.max(1.5, (i / PLOT_PERIODS) * W));
+        {Array.from({ length: periods + 1 }, (_, i) => {
+          const x = Math.min(W - 1.5, Math.max(1.5, (i / periods) * W));
           return <line key={i} x1={x} x2={x} y1="0" y2={height} className="plot-period" />;
         })}
       </g>
@@ -64,25 +65,39 @@ export function WavePlot({ label, target, noise, parts = [], missing, sum, yMax 
 
 type BarsProps = { recipe: readonly Wave[]; nMax?: number; label: string; mini?: boolean };
 
-/** 配方：每个号一根柱子，往上是正的，往下是倒着的。 */
+const ampLabel = (v: number) => `${v >= 0 ? "+" : "−"}${Number(Math.abs(v).toFixed(2))}`;
+
+/** 配方：每个号一根柱子，往上是正的，往下是倒着的，虚线是 ±1 的高度。 */
 export function RecipeBars({ recipe, nMax = 6, label, mini = false }: BarsProps) {
   const w = 300;
-  const h = 150;
+  const h = 166;
   const slot = w / nMax;
-  const mid = 66;
+  const mid = 72;
+  const unit = 44;
   return (
     <svg className={`recipe-bars${mini ? " is-mini" : ""}`} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label}>
-      <line x1="4" x2={w - 4} y1={mid} y2={mid} className="plot-axis" />
+      <line x1="8" x2={w - 8} y1={mid - unit} y2={mid - unit} className="plot-unit" />
+      <line x1="8" x2={w - 8} y1={mid + unit} y2={mid + unit} className="plot-unit" />
+      <line x1="8" x2={w - 8} y1={mid} y2={mid} className="plot-axis" />
+      <line x1="8" x2={w - 8} y1={h - 24} y2={h - 24} className="bars-sep" />
       {Array.from({ length: nMax }, (_, i) => {
         const n = i + 1;
         const wave = recipe.find((p) => p.n === n);
         const amp = wave ? wave.amp * Math.cos((wave.phase * Math.PI) / 180) : 0;
-        const bar = Math.abs(amp) * 54;
+        const bar = Math.abs(amp) * unit;
+        const cx = i * slot + slot / 2;
         const x = i * slot + slot * 0.22;
         return (
           <g key={n}>
-            {wave && <rect x={x} width={slot * 0.56} y={amp >= 0 ? mid - bar : mid} height={Math.max(bar, 2)} rx="5" fill={colorOf(n)} />}
-            <text x={i * slot + slot / 2} y={h - 6} className="bars-n">{n}</text>
+            {wave && Math.abs(amp) > 0.01 && (
+              <>
+                <rect x={x} width={slot * 0.56} y={amp >= 0 ? mid - bar : mid} height={Math.max(bar, 2)} rx="5" fill={colorOf(n)} />
+                <text x={cx} y={amp >= 0 ? mid - bar - 5 : mid + bar + 12} className="bars-val" fill={colorOf(n)}>
+                  {ampLabel(amp)}
+                </text>
+              </>
+            )}
+            <text x={cx} y={h - 7} className="bars-n">{n}号</text>
           </g>
         );
       })}

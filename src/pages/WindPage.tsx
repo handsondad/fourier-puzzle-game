@@ -6,12 +6,13 @@ import { dadLines, introTalks } from "../data/lines";
 import { pairLines } from "../data/voice-lines";
 import { centroid, readDisc, shuffle, trace, wind, type Disc } from "../lib/fourier";
 import { chime, dad, say } from "../lib/speech";
-import { spinText } from "./DiscLevelsPage";
+import { discColors, spinText } from "./DiscLevelsPage";
 
 const K_RANGE = 7;
 const ks = Array.from({ length: K_RANGE * 2 + 1 }, (_, i) => i - K_RANGE);
 /** 读出的半径小于这个，就当作没有这个盘。 */
 const NONE = 0.02;
+const reduceMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 type Curve = { id: string; emoji: string; name: string; discs: Disc[] };
 
@@ -35,7 +36,9 @@ export function WindPage({ settings, onBack }: Props) {
   const [k, setK] = useState(0);
   const [shownK, setShownK] = useState(0);
   const [found, setFound] = useState<Disc[]>([]);
+  const [tried, setTried] = useState<number[]>([]);
   const frame = useRef(0);
+  const doneBox = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (settings.sound) say(...pairLines(introTalks.wind));
@@ -52,12 +55,18 @@ export function WindPage({ settings, onBack }: Props) {
 
   /** 慢慢缠过去，看曲线怎么一圈圈卷起来。 */
   useEffect(() => {
-    let current = shownK;
-    const step = () => {
-      current += (k - current) * 0.08;
-      if (Math.abs(k - current) < 0.002) current = k;
-      setShownK(current);
-      if (current !== k) frame.current = requestAnimationFrame(step);
+    if (reduceMotion() || shownK === k) {
+      setShownK(k);
+      return;
+    }
+    const from = shownK;
+    const start = performance.now();
+    const duration = 450;
+    const step = (now: number) => {
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
+      const eased = 1 - (1 - t) ** 3;
+      setShownK(t >= 1 ? k : from + (k - from) * eased);
+      if (t < 1) frame.current = requestAnimationFrame(step);
     };
     frame.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame.current);
@@ -66,6 +75,7 @@ export function WindPage({ settings, onBack }: Props) {
   useEffect(() => {
     if (!settled || k === 0) return;
     if (reading.r <= NONE) {
+      if (!tried.includes(k)) setTried([...tried, k]);
       if (settings.sound) say(dad(dadLines.windEmpty));
       return;
     }
@@ -77,11 +87,20 @@ export function WindPage({ settings, onBack }: Props) {
     say(dad(next.length === goal ? dadLines.windAll : dadLines.windFound));
   }, [settled, k]);
 
+  useEffect(() => {
+    if (complete) doneBox.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [complete]);
+
   function pickCurve(next: Curve) {
     setCurve(next);
     setFound([]);
+    setTried([]);
     setK(0);
   }
+
+  const windCaption = k === 0
+    ? "不跟着转（0 号）"
+    : `跟着 ${k} 号盘转（${k > 0 ? "顺" : "逆"}时针缠 ${Math.abs(k)} 圈）`;
 
   return (
     <div className="page wind-page">
@@ -100,14 +119,15 @@ export function WindPage({ settings, onBack }: Props) {
         <div className="k-row" role="group" aria-label="选择缠绕圈数">
           {ks.map((n) => {
             const got = found.some((d) => d.k === n);
+            const empty = !got && tried.includes(n);
             return (
-              <button key={n} type="button" className={`k-btn${got ? " is-found" : ""}`} aria-pressed={k === n} onClick={() => setK(n)}>
+              <button key={n} type="button" className={`k-btn${got ? " is-found" : empty ? " is-tried" : ""}`} aria-pressed={k === n} onClick={() => setK(n)}>
                 {n}
               </button>
             );
           })}
         </div>
-        <p className="k-note">选 0 是不转。正数：画面跟着逆时针转；负数：跟着顺时针转。</p>
+        <p className="k-note">选 0 是不转。正数：画面跟着逆时针转；负数：跟着顺时针转。绿框是找到了，浅灰是试过没有。</p>
       </section>
 
       <div className="wind-layout">
@@ -116,8 +136,8 @@ export function WindPage({ settings, onBack }: Props) {
           <PointsPlot label={`${curve.name}原来的样子`} points={points} view={view} center={centroid(points)} color="#f07b12" />
         </figure>
         <figure className="card wind-figure">
-          <figcaption>跟着 {k} 号盘转着看（反着缠 {k} 圈）</figcaption>
-          <PointsPlot label={`反着缠 ${k} 圈以后的曲线和它的重心`} points={wound} view={view} center={center} closed={settled} />
+          <figcaption>{windCaption}</figcaption>
+          <PointsPlot label={`${windCaption}以后的曲线和它的重心`} points={wound} view={view} center={center} closed={settled} />
         </figure>
         <div className="card wind-reading" aria-live="polite">
           <h3>读一读重心</h3>
@@ -134,17 +154,23 @@ export function WindPage({ settings, onBack }: Props) {
           <h3>找到的圆盘（{found.length} / {goal}）</h3>
           {found.length ? (
             <ul className="found-list">
-              {found.map((d) => <li key={d.k}><b>{d.k} 号</b> 半径 {d.r.toFixed(1)} · {spinText(d.k)}</li>)}
+              {found.map((d, i) => (
+                <li key={d.k}>
+                  <span className="channel-dot is-inline" style={{ background: discColors[i % discColors.length] }} aria-hidden="true" />
+                  <b>{d.k} 号</b> 半径 {d.r.toFixed(1)} · {spinText(d.k)}
+                </li>
+              ))}
             </ul>
           ) : <p className="win-note">从 1 开始一个个试试。</p>}
         </div>
       </div>
 
       {complete && (
-        <section className="card wind-done">
+        <section ref={doneBox} className="card wind-done">
           <h2 className="section-title is-small">🎉 用找到的圆盘，画回原来的曲线</h2>
           <DadSays>{dadLines.windAll}</DadSays>
-          <DiscStage label="用找到的圆盘重新画出来的曲线" discs={found} target={points} view={view} mode="trail" />
+          <DiscStage label="用找到的圆盘重新画出来的曲线" discs={found}
+            colors={found.map((_, i) => discColors[i % discColors.length])} target={points} view={view} mode="trail" />
         </section>
       )}
     </div>

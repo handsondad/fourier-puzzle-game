@@ -20,10 +20,13 @@ export function stopTone() {
   if (playing) setPlaying(null);
 }
 
+export const hasSound = (parts: readonly Wave[]) => parts.some((p) => Math.abs(p.amp) > 1e-3);
+
 /** 同一个 id 再点一次就停下。 */
 export function playTone(id: string, parts: readonly Wave[], seconds = 1.6, base = BASE) {
   if (playing === id) return stopTone();
   stopTone();
+  if (!hasSound(parts)) return;
   const top = Math.max(1, ...parts.map((p) => p.n));
   const real = new Float32Array(top + 1);
   const imag = new Float32Array(top + 1);
@@ -31,7 +34,6 @@ export function playTone(id: string, parts: readonly Wave[], seconds = 1.6, base
     real[n] += amp * Math.sin(rad(phase));
     imag[n] += amp * Math.cos(rad(phase));
   }
-  if (!parts.some((p) => Math.abs(p.amp) > 1e-3)) return;
   try {
     ctx ??= new AudioContext();
     void ctx.resume();

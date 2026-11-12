@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
-  --app-font-family: 'Comic Neue', 'Ma Shan Zheng', cursive;
+  --app-font-family: 'Comic Neue', 'Ma Shan Zheng', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', cursive, sans-serif;
   
   --bg-primary: #fff8f0;
   --bg-secondary: #fff0e6;

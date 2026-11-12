@@ -9,7 +9,7 @@ import { pairLines } from "../data/voice-lines";
 import { chapters, waveLevels, type WaveLevel } from "../data/waveLevels";
 import { shapeNames, shapeRecipe, type Wave } from "../lib/fourier";
 import { chime, dad, nian, say } from "../lib/speech";
-import { playTone, stopTone, useTone } from "../lib/tone";
+import { hasSound, playTone, stopTone, useTone } from "../lib/tone";
 import {
   AMP, matchOf, N_MAX, PHASE_STEP, realMatch, revealOne, rightChannels, startWaves, sumParts, targetAt, WAVE_GOAL, waveStars
 } from "../lib/waveGame";
@@ -67,12 +67,15 @@ export function WavePlay({ level, settings, onBack, onAgain, onNext, onFinish }:
   const [revealed, setRevealed] = useState(false);
   const [won, setWon] = useState<number | null>(null);
   const later = useRef(0);
+  const winBox = useRef<HTMLElement>(null);
   const tone = useTone();
 
   const target = useMemo(() => plotValues((x) => targetAt(level, x)), [level]);
   const noise = useMemo(() => (level.noise ? plotWaves(level.noise) : undefined), [level]);
   const all = sumParts(level, waves);
   const sum = plotWaves(all);
+  const activeParts = waves.filter((w) => Math.abs(w.amp) > 0.001);
+  const targetAudio = useMemo(() => targetParts(level), [level]);
   const score = useMemo(() => matchOf(level, waves), [level, waves]);
   const right = hinted ? rightChannels(level, waves) : [];
   const next = waveLevels.find((l) => l.id === level.id + 1);
@@ -93,6 +96,10 @@ export function WavePlay({ level, settings, onBack, onAgain, onNext, onFinish }:
     chime(true);
     later.current = window.setTimeout(() => say(nian(rightLine), dad(level.win)), 350);
   }, [score]);
+
+  useEffect(() => {
+    if (won !== null) winBox.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [won]);
 
   const setWave = (i: number, change: Partial<Wave>) => setWaves(waves.map((w, j) => (j === i ? { ...w, ...change } : w)));
 
@@ -116,15 +123,22 @@ export function WavePlay({ level, settings, onBack, onAgain, onNext, onFinish }:
       <section className="card plot-card" aria-label="波形">
         <Meter pct={pct} goal={Math.round(WAVE_GOAL * 100)} />
         <WavePlot label={`目标波和你拼的波，吻合度 ${pct}%`} target={target} noise={noise}
-          parts={waves.filter((w) => Math.abs(w.amp) > 0.001).map((w) => ({ values: plotWaves([w]), color: colorOf(w.n) }))}
+          parts={activeParts.map((w) => ({ values: plotWaves([w]), color: colorOf(w.n) }))}
           missing={hinted && won === null ? target.map((v, i) => v - sum[i]) : undefined} sum={sum} />
         <p className="legend" aria-hidden="true">
           <span className="is-target">目标{shape ? `：${shapeNames[shape]}` : ""}</span>
           {level.noise && <span className="is-noise">噪音</span>}
           <span className="is-sum">加起来</span>
+          {activeParts.length > 1 && <span className="is-part">每个波</span>}
           {hinted && won === null && <span className="is-missing">还差的</span>}
         </p>
       </section>
+
+      {hinted && won === null && (
+        <div className="hint-box" role="note" aria-label="爸爸的提示">
+          <DadSays>{level.hint}</DadSays>
+        </div>
+      )}
 
       <div className="channels">
         {waves.map((wave, i) => (
@@ -154,13 +168,15 @@ export function WavePlay({ level, settings, onBack, onAgain, onNext, onFinish }:
       <div className="play-actions">
         <button type="button" className="pill-btn" onClick={hint} disabled={won !== null}>💡 提示</button>
         <button type="button" className="pill-btn" onClick={reveal} disabled={won !== null}>🔑 爸爸帮我调一个</button>
-        <button type="button" className="pill-btn" aria-pressed={tone === "target"} onClick={() => playTone("target", targetParts(level))}>🎯 听目标</button>
-        <button type="button" className="pill-btn" aria-pressed={tone === "mine"} onClick={() => playTone("mine", all)}>🎵 听我的</button>
+        {hasSound(targetAudio) && (
+          <button type="button" className="pill-btn" aria-pressed={tone === "target"} onClick={() => playTone("target", targetAudio)}>🎯 听目标</button>
+        )}
+        <button type="button" className="pill-btn" aria-pressed={tone === "mine"} disabled={!hasSound(all)} onClick={() => playTone("mine", all)}>🎵 听我的</button>
         <button type="button" className="pill-btn" onClick={() => setWaves(startWaves(level))}>↺ 重来</button>
       </div>
 
       {won !== null && (
-        <section className="card win-card" aria-live="polite">
+        <section ref={winBox} className="card win-card" aria-live="polite">
           <Burst />
           <p className="done-stars" aria-label={`${won} 颗星`}>{starRow(won)}</p>
           <p className="verdict is-right">🎉 对上啦！</p>

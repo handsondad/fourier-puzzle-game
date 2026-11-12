@@ -5,6 +5,8 @@ import { SUM_COLOR } from "./WavePlot";
 type Props = {
   label: string;
   discs: readonly Disc[];
+  /** 每个圆盘对应的颜色（和右侧控制卡圆点一致）。 */
+  colors?: readonly string[];
   /** 灰色的目标图案。 */
   target?: readonly Pt[];
   /** 画面半径（世界单位）。 */
@@ -20,10 +22,13 @@ type Props = {
 const reduceMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** 圆上套圆的舞台：每个圆盘画成一个圈和一根箭头，最后的笔尖画出图案。 */
-export function DiscStage({ label, discs, target, view = 3.6, mode = "full", seconds = 8, onDraw }: Props) {
+export function DiscStage({ label, discs, colors, target, view = 3.6, mode = "full", seconds = 8, onDraw }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const path = useMemo(() => trace(discs, 720), [discs]);
-  const chainOrder = useMemo(() => [...discs].sort((a, b) => b.r - a.r), [discs]);
+  const chainOrder = useMemo(
+    () => discs.map((disc, i) => ({ disc, color: colors?.[i] })).sort((a, b) => b.disc.r - a.disc.r),
+    [discs, colors]
+  );
   const live = useRef({ path, chainOrder, target, view, mode, seconds, drawing: null as Pt[] | null });
   live.current = { ...live.current, path, chainOrder, target, view, mode, seconds };
 
@@ -70,9 +75,16 @@ export function DiscStage({ label, discs, target, view = 3.6, mode = "full", sec
 
       if (goal?.length) {
         line(goal, true);
-        ctx.strokeStyle = "rgba(120, 160, 220, 0.38)";
+        ctx.strokeStyle = "rgba(110, 154, 224, 0.42)";
         ctx.lineWidth = 14;
         ctx.stroke();
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        line(goal, true);
+        ctx.strokeStyle = "rgba(74, 122, 198, 0.45)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
       }
 
       if (drawing) {
@@ -102,31 +114,55 @@ export function DiscStage({ label, discs, target, view = 3.6, mode = "full", sec
         ctx.stroke();
       }
 
-      const joints = discChain(order, t);
-      order.forEach((d, i) => {
+      const joints = discChain(order.map((item) => item.disc), t);
+      order.forEach(({ disc: d, color }, i) => {
         const [cx, cy] = px(joints[i]);
         if (d.r * scale > 2) {
+          ctx.save();
           ctx.beginPath();
           ctx.arc(cx, cy, d.r * scale, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(77, 150, 255, 0.28)";
-          ctx.lineWidth = 1.5;
+          if (color) {
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = 0.36;
+          } else {
+            ctx.strokeStyle = "rgba(77, 150, 255, 0.3)";
+          }
+          ctx.lineWidth = 1.7;
           ctx.stroke();
+          ctx.restore();
         }
+        ctx.save();
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(...px(joints[i + 1]));
-        ctx.strokeStyle = "rgba(61, 52, 40, 0.75)";
+        if (color) {
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.88;
+        } else {
+          ctx.strokeStyle = "rgba(61, 52, 40, 0.75)";
+        }
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+        ctx.restore();
+
+        if (d.r * scale > 3) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+          ctx.fillStyle = color ?? "rgba(93, 78, 55, 0.65)";
+          ctx.fill();
+        }
+      });
+
+      if (order.length) {
+        const [tx, ty] = px(joints[joints.length - 1]);
+        ctx.beginPath();
+        ctx.arc(tx, ty, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#ff6b6b";
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 2;
         ctx.stroke();
-      });
-      const [tx, ty] = px(joints[joints.length - 1]);
-      ctx.beginPath();
-      ctx.arc(tx, ty, 6, 0, Math.PI * 2);
-      ctx.fillStyle = "#ff6b6b";
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      }
 
       if (!still) frame = requestAnimationFrame(draw);
     };
@@ -145,7 +181,7 @@ export function DiscStage({ label, discs, target, view = 3.6, mode = "full", sec
 
   useEffect(() => {
     canvas.current?.dispatchEvent(new Event("fp:redraw"));
-  }, [path, target, view, mode]);
+  }, [path, chainOrder, target, view, mode]);
 
   const toWorld = (event: PointerEvent<HTMLCanvasElement>): Pt => {
     const box = event.currentTarget.getBoundingClientRect();

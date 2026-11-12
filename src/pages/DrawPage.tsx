@@ -6,7 +6,7 @@ import { dadLines, introTalks } from "../data/lines";
 import { pairLines } from "../data/voice-lines";
 import { centroid, fourierDiscs, resample, trace, TAU, type Pt } from "../lib/fourier";
 import { dad, say } from "../lib/speech";
-import { spinText } from "./DiscLevelsPage";
+import { discColors, spinText } from "./DiscLevelsPage";
 
 const VIEW = 3.4;
 const MAX_DISCS = 61;
@@ -97,7 +97,14 @@ export function DrawPage({ settings, onBack }: Props) {
                 onDraw={(path) => { setOwn(fit(resample(path))); setDrawing(false); setCount(8); }} />
             </>
           ) : (
-            <DiscStage label={`用 ${count} 个圆盘画图案`} discs={used} target={points} view={VIEW} mode="trail" seconds={count > 20 ? 14 : 10} />
+            <>
+              <DiscStage label={`用 ${count} 个圆盘画图案`} discs={used} colors={discColors}
+                target={points} view={VIEW} mode="trail" seconds={count > 20 ? 14 : 10} />
+              <p className="legend" aria-hidden="true">
+                <span className="is-target">原来的图案</span>
+                <span className="is-sum">圆盘画出的</span>
+              </p>
+            </>
           )}
         </section>
 
@@ -114,8 +121,11 @@ export function DrawPage({ settings, onBack }: Props) {
           <div className="card disc-list">
             <h3>最大的几个圆盘</h3>
             <ol>
-              {used.slice(0, 6).map((d) => (
-                <li key={d.k}><b>{d.k} 号盘</b> 半径 {d.r.toFixed(2)} <small>{spinText(d.k)}</small></li>
+              {used.slice(0, 6).map((d, i) => (
+                <li key={d.k}>
+                  <span className="channel-dot is-inline" style={{ background: discColors[i % discColors.length] }} aria-hidden="true" />
+                  <b>{d.k} 号盘</b> 半径 {d.r.toFixed(2)} <small>{spinText(d.k)}</small>
+                </li>
               ))}
             </ol>
             {count > 6 && <p className="win-note">还有 {count - 6} 个更小的……</p>}

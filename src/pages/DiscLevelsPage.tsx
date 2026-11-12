@@ -13,7 +13,7 @@ import { chime, dad, nian, say } from "../lib/speech";
 import { waveStars } from "../lib/waveGame";
 import { Meter } from "./WaveLevelsPage";
 
-const discColors = ["#4d96ff", "#ff6b6b", "#6bcb77", "#a66cff"];
+export const discColors = ["#4d96ff", "#ff6b6b", "#6bcb77", "#a66cff", "#21a6b5", "#e0a800"];
 
 /** 几号盘怎么转：正的逆时针，负的顺时针。 */
 export const spinText = (k: number) => (k === 0 ? "不转" : `${k > 0 ? "逆" : "顺"}时针转 ${Math.abs(k)} 圈`);
@@ -60,10 +60,12 @@ export function DiscPlay({ level, settings, onBack, onAgain, onNext, onFinish }:
   const [revealed, setRevealed] = useState(false);
   const [won, setWon] = useState<number | null>(null);
   const later = useRef(0);
+  const winBox = useRef<HTMLElement>(null);
 
   const target = useMemo(() => trace(level.target, 400), [level]);
   const view = useMemo(() => Math.max(2.6, level.target.reduce((sum, d) => sum + d.r, 0) * 1.12), [level]);
   const score = useMemo(() => discMatch(level, discs), [level, discs]);
+  const colors = useMemo(() => discs.map((_, i) => discColors[i % discColors.length]), [discs.length]);
   const right = hinted ? rightDiscs(level, discs) : [];
   const next = discLevels.find((l) => l.id === level.id + 1);
 
@@ -82,6 +84,10 @@ export function DiscPlay({ level, settings, onBack, onAgain, onNext, onFinish }:
     later.current = window.setTimeout(() => say(nian(rightLine), dad(level.win)), 350);
   }, [score]);
 
+  useEffect(() => {
+    if (won !== null) winBox.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [won]);
+
   const setDisc = (i: number, change: Partial<Disc>) => setDiscs(discs.map((d, j) => (j === i ? { ...d, ...change } : d)));
 
   const pct = Math.round(score * 100);
@@ -93,11 +99,16 @@ export function DiscPlay({ level, settings, onBack, onAgain, onNext, onFinish }:
       <div className="disc-layout">
         <section className="card stage-card-wrap" aria-label="圆盘舞台">
           <Meter pct={pct} goal={Math.round(DISC_GOAL * 100)} label="像不像" />
-          <DiscStage label={`灰色是目标图案，橙色是你的圆盘画出来的，像不像 ${pct}%`} discs={discs} target={target} view={view} />
+          <DiscStage label={`灰色是目标图案，橙色是你的圆盘画出来的，像不像 ${pct}%`} discs={discs} colors={colors} target={target} view={view} />
           <p className="legend" aria-hidden="true"><span className="is-target">目标</span><span className="is-sum">笔尖画出的</span></p>
         </section>
 
         <div className="disc-side">
+          {hinted && won === null && (
+            <div className="hint-box" role="note" aria-label="爸爸的提示">
+              <DadSays>{level.hint}</DadSays>
+            </div>
+          )}
           {discs.map((d, i) => (
             <article key={i} className="channel" style={{ "--c": discColors[i % discColors.length] } as CSSProperties}>
               <header className="channel-head">
@@ -129,7 +140,7 @@ export function DiscPlay({ level, settings, onBack, onAgain, onNext, onFinish }:
       </div>
 
       {won !== null && (
-        <section className="card win-card" aria-live="polite">
+        <section ref={winBox} className="card win-card" aria-live="polite">
           <Burst />
           <p className="done-stars" aria-label={`${won} 颗星`}>{starRow(won)}</p>
           <p className="verdict is-right">🎉 画出来啦！</p>
