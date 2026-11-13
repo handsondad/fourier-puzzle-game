@@ -45,15 +45,17 @@ export function HomePage({ waveStars, discStars, best, onGo }: Props) {
 
   const learn: Mode[] = [
     { emoji: "🔭", title: "托勒密的天空", hook: "火星为什么会倒着走？学两千年前的托勒密，用均轮套本轮，画出行星打的圈圈。", count: "从这里开始", color: "#3d5a99", hash: "#/sky" },
-    { emoji: "🎛️", title: "拼波工作台", hook: "六个正弦波随你调，一键拿到方波、锯齿波、三角波的配方，还能听声音。", count: "随便玩，没有对错", color: "#4d96ff", hash: "#/lab" },
-    { emoji: "🎡", title: "圆上圆画板", hook: "圆盘一个套一个地转，笔尖画出星星和爱心。你画一个，看要多少个圆盘。", count: "还能自己画", color: "#6bcb77", hash: "#/draw" },
-    { emoji: "🌀", title: "缠绕找重心", hook: "把曲线反着缠几圈，找它的重心，就知道里面藏着哪些圆盘。", count: "傅里叶的秘密武器", color: "#a66cff", hash: "#/wind" }
+    { emoji: "🎛️", title: "拼波工作台", hook: "六个正弦波随你调，试试长笛、单簧管、小提琴的泛音配方，再打乱出发点考考耳朵。", count: "名波 + 乐器音色", color: "#4d96ff", hash: "#/lab" },
+    { emoji: "🎡", title: "圆上圆画板", hook: "圆盘一个套一个地转，八个圆盘就能画出冯·诺依曼的大象！还能自己画一圈。", count: "大象 · 蝴蝶 · 手绘", color: "#6bcb77", hash: "#/draw" },
+    { emoji: "🌀", title: "缠绕找重心", hook: "把曲线反着缠几圈，找它的重心，就知道里面藏着哪些圆盘。", count: "傅里叶的秘密武器", color: "#a66cff", hash: "#/wind" },
+    { emoji: "🖼️", title: "照片里的波", hook: "把波铺成横竖交错的条纹毯子叠成图画！扔掉八成细波，看手机怎么给照片瘦身。", count: "二维条纹波与压缩", color: "#ff7a5c", hash: "#/photo" }
   ];
   const play: Mode[] = [
-    { emoji: "🏆", title: "拼波闯关", hook: "调好每个波的高矮、快慢和出发点，盖住灰色的目标波。", count: `⭐ ${total(waveStars)} / ${waveLevels.length * 3}`, color: "#ff9f43", hash: "#/waves" },
-    { emoji: "🎯", title: "圆盘画图", hook: "挑圆盘、调半径，让笔尖画出三尖星、心形线、雪花。", count: `⭐ ${total(discStars)} / ${discLevels.length * 3}`, color: "#ff6b6b", hash: "#/discs" },
+    { emoji: "🏆", title: "拼波闯关", hook: "调好每个波的高矮、快慢和出发点，拼出名波、乐器音色、潮汐和双重降噪。", count: `⭐ ${total(waveStars)} / ${waveLevels.length * 3}`, color: "#ff9f43", hash: "#/waves" },
+    { emoji: "🎯", title: "圆盘画图", hook: "挑圆盘、调半径，让笔尖画出心形线、雪花、四叶草、小金鱼和太空齿轮。", count: `⭐ ${total(discStars)} / ${discLevels.length * 3}`, color: "#ff6b6b", hash: "#/discs" },
     { emoji: "📻", title: "调台收音机", hook: "三个电台混成一锅粥。转旋钮，跟着转，把它们一个个找出来。", count: bestOf("radio"), color: "#4dc3c3", hash: "#/radio" },
-    { emoji: "🧪", title: "波形配方", hook: "看一条波，猜它的配方；看一份配方，猜它拼出哪条波。", count: bestOf("recipe"), color: "#ffb347", hash: "#/recipe" }
+    { emoji: "🧪", title: "波形配方", hook: "看一条波，猜它的配方；看一份配方，猜它拼出哪条波。", count: bestOf("recipe"), color: "#ffb347", hash: "#/recipe" },
+    { emoji: "🔍", title: "迷雾显影", hook: "只给你看最慢的几个条纹波，在一团朦胧影子里猜出藏着哪张画，用波越少分越高！", count: bestOf("focus"), color: "#7a6cff", hash: "#/focus" }
   ];
 
   return (
@@ -113,10 +115,11 @@ export function HomePage({ waveStars, discStars, best, onGo }: Props) {
 type Mode = { emoji: string; title: string; hook: string; count: string; color: string; hash: string };
 
 function Modes({ id, title, modes, onGo }: { id: string; title: string; modes: readonly Mode[]; onGo: (hash: string) => void }) {
+  const layout = modes.length === 5 ? " is-five" : modes.length === 4 ? " is-four" : "";
   return (
     <section aria-labelledby={id}>
       <h2 id={id} className="section-title">{title}</h2>
-      <div className={`modes${modes.length === 4 ? " is-four" : ""}`}>
+      <div className={`modes${layout}`}>
         {modes.map((mode) => (
           <button key={mode.title} type="button" className="mode-card" style={{ "--bubble": mode.color } as CSSProperties} onClick={() => onGo(mode.hash)}>
             <span className="mode-emoji" aria-hidden="true">{mode.emoji}</span>

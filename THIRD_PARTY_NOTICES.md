@@ -10,4 +10,6 @@
 
 ## 内容参考
 
-圆上套圆、"跟着转、找重心"、方波 1/n 的讲法参考了漫士沉思录的傅里叶变换科普视频（https://www.youtube.com/watch?v=gbe_NHwkRCI）。游戏里的文字和关卡都是重新写的，没有用视频里的画面和声音。
+- 圆上套圆、"跟着转、找重心"、方波 1/n 的讲法参考了漫士沉思录的傅里叶变换科普视频（https://www.youtube.com/watch?v=gbe_NHwkRCI）。
+- "大象"预设的四个复数傅里叶参数来自 Jürgen Mayer, Khaled Khairy & Jonathon Howard (2010), *Drawing an elephant with four complex parameters*, American Journal of Physics 78(6), 648–649；"蝴蝶"预设参考 Temple H. Fay (1989), *The Butterfly Curve*, American Mathematical Monthly 96(5), 442–443。
+- 乐器泛音音色、欧姆声学定律与耳蜗基底膜频率分析、开尔文潮汐预言机、迈克尔逊 80 弹簧谐波分析仪与吉布斯现象历史、二维离散余弦变换（JPEG 图像压缩原理）等科普素材整理自公开声学与科学史文献及交互教程（PhET *Fourier: Making Waves*、Jez Swanson *An Interactive Introduction to Fourier Transforms* 等）。游戏里的文字、像素画和关卡均为原创编写。

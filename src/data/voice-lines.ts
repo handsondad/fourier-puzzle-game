@@ -1,5 +1,5 @@
 import { discLevels } from "./discLevels.ts";
-import { chats, dadLines, gameLines, introTalks, programs, radioLines, recipeLines, rightLine, type Pair } from "./lines.ts";
+import { chats, dadLines, focusLines, gameLines, introTalks, programs, radioLines, recipeLines, rightLine, type Pair } from "./lines.ts";
 import { planets, skyLines, skyTalk } from "./sky.ts";
 import { talks, type Talk } from "./talks.ts";
 import { waveLevels } from "./waveLevels.ts";
@@ -38,5 +38,6 @@ export function voiceLines(): Line[] {
   add("dad", recipeLines.wave);
   add("dad", recipeLines.recipe);
   for (const text of recipeLines.explain) add("dad", text);
+  for (const text of Object.values(focusLines)) add("dad", text);
   return [...lines.values()];
 }

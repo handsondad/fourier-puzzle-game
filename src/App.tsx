@@ -7,8 +7,10 @@ import { stopSpeaking } from "./lib/speech";
 import { stopTone } from "./lib/tone";
 import { DiscHome, DiscPlay } from "./pages/DiscLevelsPage";
 import { DrawPage } from "./pages/DrawPage";
+import { FocusPage } from "./pages/FocusPage";
 import { HomePage } from "./pages/HomePage";
 import { LabPage } from "./pages/LabPage";
+import { PhotoPage } from "./pages/PhotoPage";
 import { RadioPage } from "./pages/RadioPage";
 import { RecipePage } from "./pages/RecipePage";
 import { SkyPage } from "./pages/SkyPage";
@@ -16,11 +18,11 @@ import { WaveHome, WavePlay } from "./pages/WaveLevelsPage";
 import { WindPage } from "./pages/WindPage";
 
 type Route =
-  | { page: "home" | "sky" | "lab" | "draw" | "wind" | "waves" | "discs" | "radio" | "recipe" }
+  | { page: "home" | "sky" | "lab" | "draw" | "wind" | "photo" | "waves" | "discs" | "radio" | "recipe" | "focus" }
   | { page: "wave"; id: number }
   | { page: "disc"; id: number };
 
-const simple = ["sky", "lab", "draw", "wind", "waves", "discs", "radio", "recipe"] as const;
+const simple = ["sky", "lab", "draw", "wind", "photo", "waves", "discs", "radio", "recipe", "focus"] as const;
 
 function parseRoute(hash: string): Route {
   const [, page, param] = hash.replace(/^#/, "").split("/");
@@ -33,8 +35,8 @@ function parseRoute(hash: string): Route {
 
 /** 每一关最好拿了几颗星。 */
 export type Stars = Partial<Record<number, number>>;
-/** 两个小游戏最好的一次拿了几颗星。 */
-export type Best = Partial<Record<"radio" | "recipe", number>>;
+/** 小游戏最好的一次拿了几颗星。 */
+export type Best = Partial<Record<"radio" | "recipe" | "focus", number>>;
 
 const keep = (prev: Stars, id: number, count: number) => ({ ...prev, [id]: Math.max(prev[id] ?? 0, count) });
 
@@ -67,6 +69,7 @@ function App() {
     case "lab": return <LabPage settings={settings} onBack={goHome} />;
     case "draw": return <DrawPage settings={settings} onBack={goHome} />;
     case "wind": return <WindPage settings={settings} onBack={goHome} />;
+    case "photo": return <PhotoPage settings={settings} onBack={goHome} />;
     case "waves": return <WaveHome settings={settings} stars={waveStars} onBack={goHome} onPlay={(id) => go(`#/waves/${id}`)} />;
     case "wave":
       return <WavePlay key={`${route.id}-${round}`} level={waveLevels.find((l) => l.id === route.id)!} settings={settings}
@@ -79,6 +82,7 @@ function App() {
         onFinish={(id, count) => setDiscStars((prev) => keep(prev, id, count))} />;
     case "radio": return <RadioPage settings={settings} onBack={goHome} onFinish={(count) => setBest((prev) => ({ ...prev, radio: Math.max(prev.radio ?? 0, count) }))} />;
     case "recipe": return <RecipePage settings={settings} onBack={goHome} onFinish={(count) => setBest((prev) => ({ ...prev, recipe: Math.max(prev.recipe ?? 0, count) }))} />;
+    case "focus": return <FocusPage settings={settings} onBack={goHome} onFinish={(count) => setBest((prev) => ({ ...prev, focus: Math.max(prev.focus ?? 0, count) }))} />;
     default: return <HomePage waveStars={waveStars} discStars={discStars} best={best} onGo={go} />;
   }
 }

@@ -14,7 +14,7 @@ import {
   AMP, matchOf, N_MAX, PHASE_STEP, realMatch, revealOne, rightChannels, startWaves, sumParts, targetAt, WAVE_GOAL, waveStars
 } from "../lib/waveGame";
 
-const chapterColors = ["#4d96ff", "#6bcb77", "#a66cff", "#ff9f43"];
+const chapterColors = ["#4d96ff", "#6bcb77", "#a66cff", "#ff9f43", "#21a6b5"];
 
 type HomeProps = { settings: Settings; stars: Stars; onBack: () => void; onPlay: (id: number) => void };
 

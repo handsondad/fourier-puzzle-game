@@ -28,12 +28,33 @@ const heart = Array.from({ length: 256 }, (_, i) => {
   const t = (i / 256) * TAU;
   return { x: 16 * Math.sin(t) ** 3, y: 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t) };
 });
+/** Mayer, Khairy & Howard (2010) 《用四个复数参数画一头大象》的精确傅里叶参数。 */
+const elephant = Array.from({ length: 256 }, (_, i) => {
+  const t = (i / 256) * TAU;
+  const x0 = 50 * Math.sin(t) + 18 * Math.sin(2 * t) + 12 * Math.cos(3 * t) - 14 * Math.cos(5 * t);
+  const y0 = -60 * Math.cos(t) - 30 * Math.sin(t) + 8 * Math.sin(2 * t) - 10 * Math.sin(3 * t);
+  return { x: y0, y: -x0 };
+});
+/** Temple H. Fay (1989) 蝴蝶曲线主轮廓。 */
+const butterfly = Array.from({ length: 256 }, (_, i) => {
+  const t = (i / 256) * TAU;
+  const r = Math.exp(Math.sin(t)) - 2 * Math.cos(4 * t);
+  return { x: r * Math.cos(t), y: r * Math.sin(t) };
+});
 
-type Preset = { id: string; emoji: string; name: string; points: Pt[] };
+type Preset = { id: string; emoji: string; name: string; points: Pt[]; startCount?: number; story?: string };
 
 const presets: Preset[] = [
   { id: "trefoil", emoji: "🔱", name: "三尖瓣线", points: trace([{ k: 1, r: 2, angle: 0 }, { k: -2, r: 1, angle: 0 }]) },
-  { id: "heart", emoji: "❤️", name: "爱心", points: fit(heart) },
+  {
+    id: "elephant", emoji: "🐘", name: "大象", points: fit(elephant), startCount: 8,
+    story: "数学家冯·诺依曼曾开玩笑说：“给我四个参数，我能拟合出一头大象。”2010 年三位物理学家真的用四个复数（刚好对应 8 个傅里叶圆盘）一笔画出了这头大象！"
+  },
+  { id: "heart", emoji: "❤️", name: "爱心", points: fit(heart), startCount: 4 },
+  {
+    id: "butterfly", emoji: "🦋", name: "蝴蝶", points: fit(butterfly), startCount: 6,
+    story: "这是数学家费伊在 1989 年发现的“蝴蝶曲线”。试着把圆盘从 2 个慢慢加到 16 个，看一对翅膀怎么长出来！"
+  },
   { id: "star", emoji: "⭐", name: "五角星", points: polygon(star) },
   { id: "square", emoji: "🟦", name: "方块", points: polygon([{ x: -1, y: -1 }, { x: 1, y: -1 }, { x: 1, y: 1 }, { x: -1, y: 1 }]) }
 ];
@@ -50,7 +71,8 @@ export function DrawPage({ settings, onBack }: Props) {
     if (settings.sound) say(...pairLines(introTalks.draw));
   }, []);
 
-  const points = own ?? presets.find((p) => p.id === preset)!.points;
+  const picked = presets.find((p) => p.id === preset)!;
+  const points = own ?? picked.points;
   const all = useMemo(() => fourierDiscs(points, (MAX_DISCS - 1) / 2), [points]);
   const used = all.slice(0, count);
   /** 没用上的圆盘半径平方加起来，占全部的多少（帕塞瓦尔定理：这就是画歪的程度）。 */
@@ -64,11 +86,11 @@ export function DrawPage({ settings, onBack }: Props) {
   const enough = first < 0 ? all.length : first + 1;
   const exact = leftover[enough - 1] < 1e-4;
 
-  function choose(id: string) {
-    setPreset(id);
+  function choose(item: Preset) {
+    setPreset(item.id);
     setOwn(null);
     setDrawing(false);
-    setCount(2);
+    setCount(item.startCount ?? 2);
   }
 
   function startDrawing() {
@@ -83,7 +105,7 @@ export function DrawPage({ settings, onBack }: Props) {
 
       <div className="play-actions">
         {presets.map((p) => (
-          <button key={p.id} type="button" className="pill-btn" aria-pressed={!own && !drawing && preset === p.id} onClick={() => choose(p.id)}>{p.emoji} {p.name}</button>
+          <button key={p.id} type="button" className="pill-btn" aria-pressed={!own && !drawing && preset === p.id} onClick={() => choose(p)}>{p.emoji} {p.name}</button>
         ))}
         <button type="button" className="pill-btn" aria-pressed={drawing || !!own} onClick={startDrawing}>✏️ 我自己画</button>
       </div>
@@ -116,6 +138,7 @@ export function DrawPage({ settings, onBack }: Props) {
               {exact ? "这个图案正好就是这几个圆盘画出来的，别的圆盘半径都是 0。" : "有尖角的地方，要很多很小、转得很快的圆盘。"}
             </p>
             <p className="win-note">现在还差 <b>{Math.round(leftover[count - 1] * 1000) / 10}%</b> 没画出来。</p>
+            {!own && !drawing && picked.story && <p className="story-callout">{picked.story}</p>}
             <button type="button" className="pill-btn" onClick={() => setCount(enough)} disabled={drawing}>🎯 就用 {enough} 个</button>
           </div>
           <div className="card disc-list">

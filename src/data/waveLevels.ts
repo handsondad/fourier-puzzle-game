@@ -30,7 +30,8 @@ export const chapters: readonly Chapter[] = [
   { id: 1, emoji: "🌊", title: "一个波", hook: "先认识正弦波：多高、多快、正着还是倒着。" },
   { id: 2, emoji: "➕", title: "波加波", hook: "两三个波叠在一起，每个地方的高度相加。" },
   { id: 3, emoji: "↔️", title: "挪一挪", hook: "把波往旁边挪：正弦变余弦，还能把噪音抵消掉。" },
-  { id: 4, emoji: "🎼", title: "拼出名波", hook: "只用弯弯的正弦波，拼出方波、锯齿波和三角波。" }
+  { id: 4, emoji: "🎼", title: "拼出名波", hook: "只用弯弯的正弦波，拼出方波、锯齿波和三角波。" },
+  { id: 5, emoji: "🎺", title: "声音与大海", hook: "乐器的音色、琴弦的拍频、大海的潮汐和双重降噪，全靠正弦波。" }
 ];
 
 const sin = (n: number, amp: number, phase = 0): Wave => ({ n, amp, phase });
@@ -143,9 +144,41 @@ export const waveLevels: readonly WaveLevel[] = [
   },
   {
     id: 16, chapter: 4, emoji: "🏆", title: "方波大师",
-    story: "最后一关：四个波，号码全要你自己挑，拼出一个更方的方波。",
+    story: "第四章最后一关：四个波，号码全要你自己挑，拼出一个更方的方波。",
     hint: "选 1、3、5、7 号，振幅分别是 1、三分之一、五分之一、七分之一，大约 1、0.35、0.2、0.15。",
     win: "你自己找出了方波的配方！不过拐角旁边总有个小尖角，加多少波都去不掉，这叫吉布斯现象。",
     target: { shape: "square" }, channels: [{ n: 1, free: true }, { n: 1, free: true }, { n: 1, free: true }, { n: 1, free: true }]
+  },
+  {
+    id: 17, chapter: 5, emoji: "🎷", title: "单簧管之歌",
+    story: "单簧管是一头堵住的管子，吹低音时几乎只有奇数号的泛音。挑出后面两个号，拼出它的声音。",
+    hint: "既然只有奇数号，就选 1、3、5 号波，振幅分别调到 0.9、0.6 和 0.35。",
+    win: "拼好后点听目标和听我的听听看！同样唱一个音，泛音的高矮不同，乐器的音色就不一样。",
+    target: { parts: [sin(1, 0.9), sin(3, 0.6), sin(5, 0.35)] },
+    channels: [{ n: 1 }, { n: 1, free: true }, { n: 1, free: true }]
+  },
+  {
+    id: 18, chapter: 5, emoji: "🔔", title: "调音师的耳朵",
+    story: "两个快慢差一点点的波叠在一起，会画出忽胖忽瘦的枣核。找出是哪两个紧挨着的波。",
+    hint: "数一数最密的地方，选紧挨着的 5 号波和 6 号波，振幅都调到 0.7。",
+    win: "两个相近的波一会儿同向相加变响，一会儿反向抵消变轻，这叫拍频。调琴师就是听它把钢琴调准的。",
+    target: { parts: [sin(5, 0.7), sin(6, 0.7)] },
+    channels: [{ n: 1, free: true }, { n: 2, free: true }]
+  },
+  {
+    id: 19, chapter: 5, emoji: "🌊", title: "潮汐预言机",
+    story: "海水的涨潮退潮，主要是月亮引力的波加上太阳引力的波。调好高矮和出发点，算出今天的潮水。",
+    hint: "2 号波振幅调到 0.9，相位 30 度；3 号波振幅调到 0.5，相位转到 120 度。",
+    win: "一百五十年前，开尔文勋爵用齿轮和滑轮把十几个潮汐波加起来，摇四个小时手柄就能算出港口一整年的潮水。",
+    target: { parts: [sin(2, 0.9, 30), sin(3, 0.5, 120)] },
+    channels: [{ n: 2 }, { n: 3 }], phase: true
+  },
+  {
+    id: 20, chapter: 5, emoji: "🛡️", title: "双重降噪大师",
+    story: "终极挑战：机舱里同时混进了低沉的轰鸣和尖锐的哨音。连几号波都要你自己认出来，把噪音彻底清零！",
+    hint: "噪音里藏着 1 号波和 4 号波。1 号振幅 0.8、相位 225 度；4 号振幅 0.6、相位 315 度，刚好和噪音反着。",
+    win: "太厉害了！不管混进多少种周期噪音，傅里叶变换都能把它们一个个揪出来，再用反相波消得干干净净。",
+    target: { parts: [] }, noise: [sin(1, 0.8, 45), sin(4, 0.6, 135)],
+    channels: [{ n: 1, free: true }, { n: 2, free: true }], phase: true
   }
 ];
