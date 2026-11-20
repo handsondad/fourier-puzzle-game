@@ -49,14 +49,17 @@ function App() {
   const [round, setRound] = useState(0);
 
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute(window.location.hash));
+    // 要在新页面开口之前把上一页的声音停掉：子组件的 effect 比这里先跑，放在 [route] 的 effect 里会把新页面的开场白也掐掉
+    const onHash = () => {
+      stopSpeaking();
+      stopTone();
+      setRoute(parseRoute(window.location.hash));
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   useEffect(() => {
-    stopSpeaking();
-    stopTone();
     window.scrollTo(0, 0);
   }, [route]);
 

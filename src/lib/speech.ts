@@ -26,6 +26,10 @@ function synth(who: Who, text: string): Promise<void> {
 }
 
 let audio: HTMLAudioElement | null = null;
+/** 下一句先在这里下载着，轮到它时不用再等网络。 */
+let spare: HTMLAudioElement | null = null;
+/** 下不来的录音记一下，下次直接用浏览器语音，不再白等一回。 */
+const broken = new Set<string>();
 let run = 0;
 let speaking: Line | null = null;
 const listeners = new Set<() => void>();
@@ -35,16 +39,46 @@ function setSpeaking(line: Line | null) {
   listeners.forEach((listener) => listener());
 }
 
-function play(who: Who, text: string, token: number): Promise<void> {
+const clipUrl = (who: Who, text: string) => {
   const clip = clips[`${who}|${text}`];
-  if (!clip) return synth(who, text);
+  const url = clip && `${base}voice/${clip.file}.mp3`;
+  return url && !broken.has(url) ? url : null;
+};
+
+function preload(line: Line | undefined) {
+  const url = line && clipUrl(line.who, line.text);
+  if (!url || spare?.dataset.url === url) return;
+  spare = new Audio(url);
+  spare.dataset.url = url;
+}
+
+function play(who: Who, text: string, token: number): Promise<void> {
+  const url = clipUrl(who, text);
+  if (!url) return synth(who, text);
   return new Promise((resolve) => {
     if (token !== run) return resolve();
-    audio = new Audio(`${base}voice/${clip.file}.mp3`);
-    audio.onended = () => resolve();
-    audio.onerror = () => synth(who, text).then(resolve);
-    audio.onpause = () => resolve();
-    audio.play().catch(() => resolve());
+    const ready = spare?.dataset.url === url ? spare : null;
+    if (ready) spare = null;
+    const current = ready ?? new Audio(url);
+    audio = current;
+    current.onended = () => resolve();
+    let failed = false;
+    const fail = () => {
+      if (failed) return;
+      failed = true;
+      broken.add(url);
+      if (token === run && audio === current) synth(who, text).then(resolve);
+      else resolve();
+    };
+    current.onerror = fail;
+    current.onpause = () => resolve();
+    // 预先下载的那一份可能早就失败了，错误事件已经错过
+    if (current.error) return fail();
+    // 下载失败时 play() 也会报 NotSupportedError，这时要等浏览器语音念完再往下，不能提前结束
+    current.play().catch((error: unknown) => {
+      if ((error as Error)?.name === "NotSupportedError") fail();
+      else resolve();
+    });
   });
 }
 
@@ -52,10 +86,12 @@ function play(who: Who, text: string, token: number): Promise<void> {
 export async function say(...lines: Line[]) {
   stopSpeaking();
   const token = run;
-  for (const line of lines) {
+  for (const [i, line] of lines.entries()) {
     if (token !== run) return;
     setSpeaking(line);
-    await play(line.who, line.text, token);
+    const playing = play(line.who, line.text, token);
+    preload(lines[i + 1]);
+    await playing;
   }
   if (token === run) setSpeaking(null);
 }
@@ -90,6 +126,8 @@ let tones: AudioContext | null = null;
 export function chime(right: boolean) {
   try {
     tones ??= new AudioContext();
+    // 手机切到后台再回来，声音环境会被挂起，要叫醒才出声
+    void tones.resume();
     const now = tones.currentTime;
     const notes = right ? [660, 880] : [220];
     notes.forEach((frequency, i) => {
