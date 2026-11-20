@@ -38,18 +38,23 @@ export function DiscStage({ label, discs, colors, target, view = 3.6, mode = "fu
     const ctx = el.getContext("2d");
     if (!ctx) return;
     let frame = 0;
+    let visible = true;
     const start = performance.now();
     const still = reduceMotion();
 
-    const fit = () => {
+    const resize = () => {
       const ratio = window.devicePixelRatio || 1;
       const { width, height } = el.getBoundingClientRect();
       el.width = Math.round(width * ratio);
       el.height = Math.round(height * ratio);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     };
-    fit();
-    const observer = new ResizeObserver(fit);
+    resize();
+    // 改画布大小会把画面清空，没在一直重画的时候要补画一次
+    const observer = new ResizeObserver(() => {
+      resize();
+      redraw();
+    });
     observer.observe(el);
 
     const draw = (now: number) => {
@@ -164,17 +169,24 @@ export function DiscStage({ label, discs, colors, target, view = 3.6, mode = "fu
         ctx.stroke();
       }
 
-      if (!still) frame = requestAnimationFrame(draw);
+      // 没有圆盘在转（空画板）、或者滚出屏幕了，就不用一直重画
+      if (!still && visible && order.length) frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
-    const redraw = () => {
+    function redraw() {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(draw);
-    };
+    }
+    const onScreen = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) redraw();
+    });
+    onScreen.observe(el);
     el.addEventListener("fp:redraw", redraw);
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      onScreen.disconnect();
       el.removeEventListener("fp:redraw", redraw);
     };
   }, []);
@@ -207,6 +219,11 @@ export function DiscStage({ label, discs, colors, target, view = 3.6, mode = "fu
         const drawing = live.current.drawing;
         live.current.drawing = null;
         if (drawing && drawing.length > 8) onDraw(drawing);
+        canvas.current?.dispatchEvent(new Event("fp:redraw"));
+      })}
+      onPointerCancel={onDraw && (() => {
+        // 被系统手势打断的这一笔不算，不然画板一直停在「正在画」
+        live.current.drawing = null;
         canvas.current?.dispatchEvent(new Event("fp:redraw"));
       })} />
   );

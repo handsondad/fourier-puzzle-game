@@ -68,13 +68,17 @@ export function SkyStage({ label, planet, epicycle, playing, band = false }: Pro
     const bandCtx = bandEl?.getContext("2d") ?? null;
     let frame = 0;
     let last = performance.now();
+    let visible = true;
     const still = reduceMotion();
 
+    // 改画布大小会把画面清空，没在一直重画的时候要补画一次
     const fit = () => {
       fitCanvas(el, ctx);
       if (bandEl && bandCtx) fitCanvas(bandEl, bandCtx);
+      redraw();
     };
-    fit();
+    fitCanvas(el, ctx);
+    if (bandEl && bandCtx) fitCanvas(bandEl, bandCtx);
     const observer = new ResizeObserver(fit);
     observer.observe(el);
     if (bandEl) observer.observe(bandEl);
@@ -154,12 +158,14 @@ export function SkyStage({ label, planet, epicycle, playing, band = false }: Pro
         ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        for (let i = 1; i <= at; i++) {
+        // 同一种颜色连着的一段合成一笔画，不用每一小段都描一次
+        ctx.lineWidth = 3;
+        for (let i = 1; i <= at;) {
+          const color = back[i] ? RETRO_COLOR : p.color;
           ctx.beginPath();
           ctx.moveTo(...px(path[i - 1]));
-          ctx.lineTo(...px(path[i]));
-          ctx.strokeStyle = back[i] ? RETRO_COLOR : p.color;
-          ctx.lineWidth = 3;
+          for (; i <= at && (back[i] ? RETRO_COLOR : p.color) === color; i++) ctx.lineTo(...px(path[i]));
+          ctx.strokeStyle = color;
           ctx.stroke();
         }
         planetAt = path[at];
@@ -209,25 +215,32 @@ export function SkyStage({ label, planet, epicycle, playing, band = false }: Pro
         bandCtx.fillText(back[at] ? `↩ ${p.name}正在倒着走！` : `${p.name}往前走 →`, 10, 18);
       }
 
-      if (!still) frame = requestAnimationFrame(draw);
+      // 停住了、或者滚出屏幕了，就不用一直重画
+      if (!still && state.playing && visible) frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
-    const redraw = () => {
+    function redraw() {
       cancelAnimationFrame(frame);
       last = performance.now();
       frame = requestAnimationFrame(draw);
-    };
+    }
+    const onScreen = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) redraw();
+    });
+    onScreen.observe(el);
     el.addEventListener("fp:redraw", redraw);
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      onScreen.disconnect();
       el.removeEventListener("fp:redraw", redraw);
     };
   }, []);
 
   useEffect(() => {
     sky.current?.dispatchEvent(new Event("fp:redraw"));
-  }, [planet, epicycle]);
+  }, [planet, epicycle, playing]);
 
   return (
     <div className="sky-wrap">
