@@ -105,7 +105,7 @@ export function WavePlay({ level, settings, onBack, onAgain, onNext, onFinish }:
 
   function hint() {
     setHinted(true);
-    say(dad(level.hint));
+    if (settings.sound) say(dad(level.hint));
   }
 
   function reveal() {

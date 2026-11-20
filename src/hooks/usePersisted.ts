@@ -4,7 +4,10 @@ export function usePersisted<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = window.localStorage.getItem(key);
-      return raw === null ? initial : (JSON.parse(raw) as T);
+      if (raw === null) return initial;
+      const saved = JSON.parse(raw) as T;
+      // 存的东西坏了（比如成了 null 或别的类型），就当没存过，不然首页会白屏
+      return saved !== null && typeof saved === typeof initial ? saved : initial;
     } catch {
       return initial;
     }

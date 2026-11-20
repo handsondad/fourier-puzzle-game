@@ -132,7 +132,7 @@ export function DiscPlay({ level, settings, onBack, onAgain, onNext, onFinish }:
             </article>
           ))}
           <div className="play-actions">
-            <button type="button" className="pill-btn" onClick={() => { setHinted(true); say(dad(level.hint)); }} disabled={won !== null}>💡 提示</button>
+            <button type="button" className="pill-btn" onClick={() => { setHinted(true); if (settings.sound) say(dad(level.hint)); }} disabled={won !== null}>💡 提示</button>
             <button type="button" className="pill-btn" onClick={() => { setHinted(true); setRevealed(true); setDiscs(revealDisc(level, discs)); }} disabled={won !== null}>🔑 爸爸帮我调一个</button>
             <button type="button" className="pill-btn" onClick={() => setDiscs(startDiscs(level))}>↺ 重来</button>
           </div>

@@ -33,6 +33,7 @@ export function SkyPage({ settings, onBack, onGo }: Props) {
   useEffect(() => {
     if (won || match < FIT_GOAL) return;
     setWon(true);
+    if (!settings.sound) return;
     chime(true);
     later.current = window.setTimeout(() => say(dad(planet.fit)), 350);
   }, [match]);

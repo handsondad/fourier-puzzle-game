@@ -95,7 +95,7 @@ export function DrawPage({ settings, onBack }: Props) {
 
   function startDrawing() {
     setDrawing(true);
-    say(dad(dadLines.drawOwn));
+    if (settings.sound) say(dad(dadLines.drawOwn));
   }
 
   return (

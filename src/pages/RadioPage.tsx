@@ -46,6 +46,8 @@ export function RadioPage({ settings, onBack, onFinish }: Props) {
   }
 
   function lock() {
+    // 台都找齐了，正在等结算，这时候再按不算错，不然显示的星星和记下来的对不上
+    if (found.length === RADIO_COUNT) return;
     const result = lockAt(stations, dial);
     if (result.kind === "found") {
       if (found.includes(result.station)) return;

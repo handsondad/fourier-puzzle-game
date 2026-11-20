@@ -45,7 +45,7 @@ export function PhotoPage({ settings, onBack }: Props) {
 
   function startCustom() {
     if (!custom) setCustom([...source]);
-    say(dad(dadLines.photoOwn));
+    if (settings.sound) say(dad(dadLines.photoOwn));
   }
 
   function paintCell(index: number, erase: boolean) {

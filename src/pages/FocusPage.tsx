@@ -55,6 +55,7 @@ export function FocusPage({ settings, onBack, onFinish }: Props) {
     if (right) setPoints(points + focusPoints(stage));
     if (!settings.sound) return;
     chime(right);
+    const explain = right && stage === 0 ? focusLines.explainFast : focusLines.explainMore;
     later.current = window.setTimeout(() => say(...(right ? [nian(rightLine), dad(explain)] : [dad(focusLines.explainMore)])), 350);
   }
 
